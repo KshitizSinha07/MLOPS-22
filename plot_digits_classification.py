@@ -13,10 +13,15 @@ hand-written digits, from 0-9.
 
 # Standard scientific Python imports
 import matplotlib.pyplot as plt
-
+import numpy as np
 # Import datasets, classifiers and performance metrics
 from sklearn import datasets, svm, metrics
 from sklearn.model_selection import train_test_split
+
+from tabulate import tabulate
+
+from skimage import data, color
+from skimage.transform import rescale, resize, downscale_local_mean
 
 ###############################################################################
 # Digits dataset
@@ -34,8 +39,8 @@ from sklearn.model_selection import train_test_split
 
 
 # model hyperparams
-GAMMA = 0.001
-C = 0.5
+
+
 
 #1. settin the ranges of hyperparameters
 
@@ -48,9 +53,10 @@ C = 0.5
 #6. Report the test set accuracyu with that best model
 
 
-gamma_list=(0.001,0.01,0.002,0.005 )
-c_list=(0.1,1,5,2,10,0.5)
-h_params_list=[{'gamma':g,'c':C} for g in gamma_list for C in c_list ]
+gamma_list = [0.01, 0.005, 0.001, 0.0005, 0.0001]
+c_list = [0.1, 0.2, 0.5, 1, 2, 5, 10] 
+
+h_param_comb = [{'gamma':g, 'C':c} for g in gamma_list for c in c_list]
 
 train_frac=0.8
 test_frac=0.1
@@ -70,7 +76,23 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 
 # flatten the images
 n_samples = len(digits.images)
-data = digits.images.reshape((n_samples, -1))
+print("Original Image size is : " , (digits.images[0].shape))
+SCALE_FAC=2
+img_res=len(rescale(digits.images[0],SCALE_FAC,anti_aliasing=True))
+print("New Image Size is: ", img_res,'x ', img_res)
+data1=np.empty([ len(digits.images[:,1,1]), img_res, img_res])
+
+
+for i in range(len(digits.images[:,1,1])):
+    data1[i,:]=rescale(digits.images[i],SCALE_FAC,anti_aliasing=True)
+    #pass
+
+#data = digits.images.reshape((n_samples, -1))
+print("New Image dataset shape is : " , data1.shape)
+data = data1.reshape((n_samples, -1))
+
+#image_rescaled = rescale(image, 0.25, anti_aliasing=False)
+
 
 #PART: define train/dev/test splits of experiment protocol
 # train to train model
@@ -84,9 +106,6 @@ X_test, X_dev, y_test, y_dev = train_test_split(
     X_dev_test, y_dev_test, test_size=(dev_frac)/dev_test_frac, shuffle=True
 )
 
-#PART: Define the model
-# Create a classifier: a support vector classifier
-clf = svm.SVC()
 
 
 
@@ -95,9 +114,14 @@ clf = svm.SVC()
 best_acc=-1
 best_model=None
 best_hyperparams=None
-
-for hyper_params in h_params_list:
+table1=[['Hyper_params', "Train Accuracy %",'Dev Accuracy %', 'Test Accuracy %']]
+#table1=[]
+for hyper_params in h_param_comb:
     #print(hyper_params)   
+
+    #PART: Define the model
+    # Create a classifier: a support vector classifier
+    clf = svm.SVC()
 
     clf.set_params(**hyper_params)
 
@@ -112,14 +136,41 @@ for hyper_params in h_params_list:
     if current_acc> best_acc:
         best_acc=current_acc
         best_model=clf
-        best_hyperparams=hyper_params
+        best_hyperparams=hyper_params            
+        #print("Found new best acc :"+str(hyper_params))
+        #print("New best val accuracy is:" + str(current_acc))
 
-print(best_acc)
-print(best_hyperparams)
+
+    predicted_test = clf.predict(X_test)
+    test_acc = metrics.accuracy_score(y_pred=predicted_test, y_true=y_test)
+
+    predicted_train = clf.predict(X_train)
+    train_acc = metrics.accuracy_score(y_pred=predicted_train, y_true=y_train)
+
+    predicted_dev = clf.predict(X_dev)
+    dev_acc = metrics.accuracy_score(y_pred=predicted_dev, y_true=y_dev)
+
+    table1.append([hyper_params, round(100*train_acc,2),round(100*dev_acc,2), round(100*test_acc,2)])
 
 
-predicted_dev = clf.predict(X_test)
-current_acc = metrics.accuracy_score(y_pred=predicted_dev, y_true=y_test)
+print(tabulate(table1,headers='firstrow',tablefmt='fancy_grid'))    
+
+#print(best_acc)
+print("best_hyperparams are: ", best_hyperparams)
+
+
+predicted_test = best_model.predict(X_test)
+test_acc = metrics.accuracy_score(y_pred=predicted_test, y_true=y_test)
+
+predicted_train = best_model.predict(X_train)
+train_acc = metrics.accuracy_score(y_pred=predicted_train, y_true=y_train)
+
+predicted_dev = best_model.predict(X_dev)
+dev_acc = metrics.accuracy_score(y_pred=predicted_dev, y_true=y_dev)
+
+print("train acc: " + str(round(100*train_acc,2))+" %")
+print("dev acc: " + str(round(100*dev_acc,2))+" %")
+print("test acc: " + str(round(100*test_acc,2))+" %")
 
 
     ###############################################################################
@@ -136,12 +187,12 @@ current_acc = metrics.accuracy_score(y_pred=predicted_dev, y_true=y_test)
     ###############################################################################
     # :func:`~sklearn.metrics.classification_report` builds a text report showing
     # the main classification metrics.
-
+"""
 print(
-        f"Classification report for classifier {clf}:\n"
-        f"{metrics.classification_report(y_test, predicted)}\n"
+        f"Classification report for classifier {best_model}:\n"
+        f"{metrics.classification_report(y_test, predicted_train)}\n"
     )
-
+"""
 ###############################################################################
 # We can also plot a :ref:`confusion matrix <confusion_matrix>` of the
 # true digit values and the predicted digit values.
