@@ -58,9 +58,9 @@ c_list = [0.1, 0.5, 1, 10]
 
 h_param_comb = [{'gamma':g, 'C':c} for g in gamma_list for c in c_list]
 
-train_frac=0.8
-test_frac=0.1
-dev_frac=0.1
+train_frac=0.5
+test_frac=0.2
+dev_frac=0.3
 
 
 
