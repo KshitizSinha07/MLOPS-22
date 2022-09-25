@@ -77,9 +77,9 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 # flatten the images
 n_samples = len(digits.images)
 print("Original Image size is : " , (digits.images[0].shape))
-SCALE_FAC=2
+SCALE_FAC=1
 img_res=len(rescale(digits.images[0],SCALE_FAC,anti_aliasing=True))
-print("New Image Size is: ", img_res,'x ', img_res)
+#print("New Image Size is: ", img_res,'x ', img_res)
 data1=np.empty([ len(digits.images[:,1,1]), img_res, img_res])
 
 
@@ -88,7 +88,7 @@ for i in range(len(digits.images[:,1,1])):
     #pass
 
 #data = digits.images.reshape((n_samples, -1))
-print("New Image dataset shape is : " , data1.shape)
+#print("New Image dataset shape is : " , data1.shape)
 data = data1.reshape((n_samples, -1))
 
 #image_rescaled = rescale(image, 0.25, anti_aliasing=False)
