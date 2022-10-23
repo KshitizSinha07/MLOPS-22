@@ -112,3 +112,36 @@ def tune_and_save(clf, x_train, y_train, x_dev, y_dev, metric, h_param_comb, mod
     print("Best Metric on Dev was:{}".format(best_metric))
 
     return model_path
+
+
+def test_classifier_bias(clf,x_test, y_test):
+    # returns 1 for unbiased (i.e. pass), 0 for biased (i.e. fail)
+    predicted=clf.predict(x_test)
+    unique_elements_prediction=set(predicted)
+    n_class_prediction=len(unique_elements_prediction)
+    unique_elements_test=set(y_test)
+    n_class_test=len(unique_elements_test)
+    if n_class_prediction == 1 and n_class_test!=1:
+        print("Model is Biased")
+        return 0 
+    else:
+        print("Model is Un-Biased")
+        return 1
+
+def test_classifier_all_class(clf,x_test, y_test):
+    # returns 1 for pass (detect all classes), 0 for fail
+    predicted=clf.predict(x_test)
+    unique_elements_prediction=set(predicted)
+    n_class_prediction=len(unique_elements_prediction)
+    unique_elements_test=set(y_test)
+    n_class_test=len(unique_elements_test)
+    if n_class_prediction ==  n_class_test:
+        print("Model predicts all classes")
+        return 1 
+    else:
+        print("Model  do not predicts all classes")
+        return 0
+
+
+
+
