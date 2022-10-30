@@ -85,8 +85,8 @@ def h_param_tuning(h_param_comb, clf, x_train, y_train, x_dev, y_dev, metric):
             best_metric = cur_metric
             best_model = clf
             best_h_params = cur_h_params
-            print("Found new best metric with :" + str(cur_h_params))
-            print("New best val metric:" + str(cur_metric))
+            #print("Found new best metric with :" + str(cur_h_params))
+            #print("New best val metric:" + str(cur_metric))
     return best_model, best_metric, best_h_params
 
 
@@ -106,10 +106,10 @@ def tune_and_save(clf, x_train, y_train, x_dev, y_dev, metric, h_param_comb, mod
         model_path = best_model_name
     dump(best_model, model_path)
 
-    print("Best hyperparameters were:")
-    print(best_h_params)
+    #print("Best hyperparameters were:")
+    #print(best_h_params)
 
-    print("Best Metric on Dev was:{}".format(best_metric))
+    #print("Best Metric on Dev was:{}".format(best_metric))
 
     return model_path
 
