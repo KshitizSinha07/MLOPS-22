@@ -53,14 +53,14 @@ from skimage.transform import rescale, resize, downscale_local_mean
 #6. Report the test set accuracyu with that best model
 
 
-gamma_list = [0.01, 0.005, 0.001, 0.0005, 0.0001]
-c_list = [0.1, 0.2, 0.5, 1, 2, 5, 10] 
+gamma_list = [0.01, 0.001, 0.0005, 0.0001]
+c_list = [0.1, 0.5, 1, 10] 
 
 h_param_comb = [{'gamma':g, 'C':c} for g in gamma_list for c in c_list]
 
-train_frac=0.8
-test_frac=0.1
-dev_frac=0.1
+train_frac=0.5
+test_frac=0.2
+dev_frac=0.3
 
 
 
@@ -76,20 +76,9 @@ for ax, image, label in zip(axes, digits.images, digits.target):
 
 # flatten the images
 n_samples = len(digits.images)
-print("Original Image size is : " , (digits.images[0].shape))
-SCALE_FAC=2
-img_res=len(rescale(digits.images[0],SCALE_FAC,anti_aliasing=True))
-print("New Image Size is: ", img_res,'x ', img_res)
-data1=np.empty([ len(digits.images[:,1,1]), img_res, img_res])
 
 
-for i in range(len(digits.images[:,1,1])):
-    data1[i,:]=rescale(digits.images[i],SCALE_FAC,anti_aliasing=True)
-    #pass
-
-#data = digits.images.reshape((n_samples, -1))
-print("New Image dataset shape is : " , data1.shape)
-data = data1.reshape((n_samples, -1))
+data = digits.images.reshape((n_samples, -1))
 
 #image_rescaled = rescale(image, 0.25, anti_aliasing=False)
 
@@ -114,8 +103,12 @@ X_test, X_dev, y_test, y_dev = train_test_split(
 best_acc=-1
 best_model=None
 best_hyperparams=None
+
 table1=[['Hyper_params', "Train Accuracy %",'Dev Accuracy %', 'Test Accuracy %']]
-#table1=[]
+table2=[]
+#min_acc=[0,0,0]
+#max_acc=[0,0,0]
+
 for hyper_params in h_param_comb:
     #print(hyper_params)   
 
@@ -132,6 +125,7 @@ for hyper_params in h_param_comb:
     predicted_dev = clf.predict(X_dev)
 
     current_acc = metrics.accuracy_score(y_pred=predicted_dev, y_true=y_dev)
+
 
     if current_acc> best_acc:
         best_acc=current_acc
@@ -151,10 +145,19 @@ for hyper_params in h_param_comb:
     dev_acc = metrics.accuracy_score(y_pred=predicted_dev, y_true=y_dev)
 
     table1.append([hyper_params, round(100*train_acc,2),round(100*dev_acc,2), round(100*test_acc,2)])
+    table2.append([train_acc,dev_acc,test_acc])
 
+    
 
-print(tabulate(table1,headers='firstrow',tablefmt='fancy_grid'))    
+#min_acc=[0,0,0]
+#max_acc=[0,0,0]
+#min_acc=min(np.array(table2),1)
 
+print(tabulate(table1,headers='firstrow',tablefmt='grid'))    
+print("Min Accuracy (train-dev-test): ",np.min(np.array(table2),axis=0))
+print("Max Accuracy (train-dev-test): ",np.max(np.array(table2),axis=0))
+print("Median Accuracy (train-dev-test): ",np.median(np.array(table2),axis=0))
+print("Mean Accuracy (train-dev-test): ",np.mean(np.array(table2),axis=0))
 #print(best_acc)
 print("best_hyperparams are: ", best_hyperparams)
 
