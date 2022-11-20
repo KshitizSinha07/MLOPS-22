@@ -1,15 +1,3 @@
-"""
-================================
-Recognizing hand-written digits
-================================
-
-This example shows how scikit-learn can be used to recognize images of
-hand-written digits, from 0-9.
-
-"""
-
-# Author: Gael Varoquaux <gael dot varoquaux at normalesup dot org>
-# License: BSD 3 clause
 
 # Standard scientific Python imports
 import matplotlib.pyplot as plt
@@ -23,34 +11,20 @@ from tabulate import tabulate
 from skimage import data, color
 from skimage.transform import rescale, resize, downscale_local_mean
 
-###############################################################################
-# Digits dataset
-# --------------
-#
-# The digits dataset consists of 8x8
-# pixel images of digits. The ``images`` attribute of the dataset stores
-# 8x8 arrays of grayscale values for each image. We will use these arrays to
-# visualize the first 4 images. The ``target`` attribute of the dataset stores
-# the digit each image represents and this is included in the title of the 4
-# plots below.
-#
-# Note: if we were working from image files (e.g., 'png' files), we would load
-# them using :func:`matplotlib.pyplot.imread`.
+from utils import train_dev_test_split, get_all_h_param_comb, preprocess_digits, data_viz, pred_image_viz, h_param_tuning, tune_and_save
+from joblib import dump , load
+import argparse
+import os
 
 
-# model hyperparams
+parser = argparse.ArgumentParser(description='Process some integers.')
+parser.add_argument('--clf_name', dest='classifier', type=str, nargs=1, help='classifier name')
+parser.add_argument('--random_state', dest='random_state', type=int, nargs=1,help='define the classifier)')
+
+args = parser.parse_args()
+print(args)
 
 
-
-#1. settin the ranges of hyperparameters
-
-
-#2. train for every combination of hyper parameter values
-
-#3. train the mode1
-#4. compute the accuracy on validations set
-#5. Identify the best combination of hyper parameters for which validation set acuracy is the highest
-#6. Report the test set accuracyu with that best model
 
 
 gamma_list = [0.01, 0.001, 0.0005, 0.0001]
@@ -58,9 +32,7 @@ c_list = [0.1, 0.5, 1, 10]
 
 h_param_comb = [{'gamma':g, 'C':c} for g in gamma_list for c in c_list]
 
-train_frac=0.5
-test_frac=0.2
-dev_frac=0.3
+
 
 
 
@@ -82,20 +54,20 @@ data = digits.images.reshape((n_samples, -1))
 
 #image_rescaled = rescale(image, 0.25, anti_aliasing=False)
 
+train_frac, test_frac, dev_frac =0.5,0.2,0.3
 
-#PART: define train/dev/test splits of experiment protocol
-# train to train model
-# dev to set hyperparameters of the model
-# test to evaluate the performance of the model
-dev_test_frac = 1-train_frac
-X_train, X_dev_test, y_train, y_dev_test = train_test_split(
-    data, digits.target, test_size=dev_test_frac, shuffle=True
-)
-X_test, X_dev, y_test, y_dev = train_test_split(
-    X_dev_test, y_dev_test, test_size=(dev_frac)/dev_test_frac, shuffle=True
-)
+random_state_seed=args.random_state[0] #10
 
+#X_train, X_dev_test, y_train, y_dev_test = train_test_split(
+#    data, digits.target, test_size=dev_test_frac, shuffle=True,random_state_seed
+#)
+#X_test, X_dev, y_test, y_dev = train_test_split(
+#    X_dev_test, y_dev_test, test_size=(dev_frac)/dev_test_frac, shuffle=True, random_state_seed
+#)
+label=digits.target
+args.random_state
 
+X_train, y_train, X_dev, y_dev, X_test, y_test=train_dev_test_split(data, label, train_frac, dev_frac, random_state_seed)
 
 
 #PART: setting up hyperparameter
@@ -109,12 +81,21 @@ table2=[]
 #min_acc=[0,0,0]
 #max_acc=[0,0,0]
 
+if args.classifier == 'svm' :
+    clf = svm.SVC()
+elif args.classifier == 'tree':
+    clf=tree.DecisionTreeClassifier()
+else:
+    clf = svm.SVC()
+
+
 for hyper_params in h_param_comb:
     #print(hyper_params)   
 
     #PART: Define the model
     # Create a classifier: a support vector classifier
-    clf = svm.SVC()
+    
+    
 
     clf.set_params(**hyper_params)
 
@@ -164,16 +145,45 @@ print("best_hyperparams are: ", best_hyperparams)
 
 predicted_test = best_model.predict(X_test)
 test_acc = metrics.accuracy_score(y_pred=predicted_test, y_true=y_test)
-
+test_f1macro = metrics.f1_score(y_pred=predicted_test, y_true=y_test, average='macro')
 predicted_train = best_model.predict(X_train)
 train_acc = metrics.accuracy_score(y_pred=predicted_train, y_true=y_train)
 
 predicted_dev = best_model.predict(X_dev)
 dev_acc = metrics.accuracy_score(y_pred=predicted_dev, y_true=y_dev)
 
-print("train acc: " + str(round(100*train_acc,2))+" %")
-print("dev acc: " + str(round(100*dev_acc,2))+" %")
+#print("train acc: " + str(round(100*train_acc,2))+" %")
+#print("dev acc: " + str(round(100*dev_acc,2))+" %")
 print("test acc: " + str(round(100*test_acc,2))+" %")
+
+
+
+
+# save the best_model
+
+model_path=os.path.dirname(__file__)
+best_param_config = "_".join([h + "=" + str(best_hyperparams[h]) for h in best_hyperparams])
+
+if type(clf) == svm.SVC:
+    model_type = 'svm_' 
+
+#best_model_name =  model_type + best_param_config + ".joblib"
+best_model_name =  os.path.join(model_path,'../models',str(model_type + best_param_config + ".joblib"))
+
+dump(best_model, best_model_name)
+
+
+
+
+file_path="../results/"
+
+file_name=str(file_path+model_type+str(random_state_seed)+".txt")
+
+file1 = open(file_name,"a")
+str2=str("test accuracy: "+str(test_acc)+"\n"+"test f1 macro: "+str(test_f1macro))
+file1.write(str2)
+file1.close()
+
 
 
     ###############################################################################
